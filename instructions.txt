@@ -1,0 +1,136 @@
+### Swim Meet Simulation Tool - Development Instructions
+
+#### Project Overview:
+Develop a web-based Swim Meet Simulation Tool designed to help track and calculate team scores based on swimmer placements. The tool will support selecting swimmers for events, enforce participation limits, automatically calculate scores, and provide user-friendly interaction.
+
+---
+
+#### 1. **Frontend Framework**
+- **Technologies:** HTML, CSS, and JavaScript only (No Rust or complex frameworks).
+- **Hosting Compatibility:** Must be fully compatible with GitHub Pages.
+
+---
+
+#### 2. **Core Features**
+
+**A. Event and Swimmer Management:**
+- **Data Source Hierarchy:**
+  1. Primary: Attempt to scrape data from `https://utswimcoach.com/` using JavaScript fetch
+  2. Fallback: If CORS prevents scraping, prompt for CSV/PNG upload or manual entry
+- **Default Events List (Fallback):**
+  - 50 Freestyle
+  - 100 Freestyle
+  - 200 Freestyle
+  - 500 Freestyle
+  - 100 Backstroke
+  - 100 Breaststroke
+  - 100 Butterfly
+  - 200 I.M.
+  - 200 Freestyle Relay
+  - 400 Freestyle Relay
+  - 200 Medley Relay
+- **Time Format:** MM:SS.ms (e.g., 1:45.32)
+- **Sample Data:** Include test data for immediate tool testing
+- **Reset Data Button:** Clears all entries and selections
+
+**B. Swimmer Selection and Placement:**
+- **Initial Setup:** Region/Division selection required before starting
+- **Drag-and-Drop Interface:** Assign swimmers to event placements (1st-16th) with real-time team score updates
+- **Participation Tracker:**
+  - Green: within limit
+  - Yellow: approaching limit
+  - Red: exceeds limit
+- **Participation Rules:**
+  - 4 event limit per swimmer: Standard (2 individual + 2 relays) or Exception (3 relays + 1 individual)
+  - **Override checkbox** for manual exceptions
+- **Relay Team Tracking:**
+  - Assign 4 swimmers per relay team
+  - Participation limits apply to both individual and relay events
+  - Relay points will be **entered manually** by the user
+
+**C. Point Allocation:**
+- **Individual Event Points:**
+  - 1st: 20 pts
+  - 2nd: 17 pts
+  - 3rd: 16 pts
+  - 4th: 15 pts
+  - 5th: 14 pts
+  - 6th: 13 pts
+  - 7th: 12 pts
+  - 8th: 11 pts
+  - 9th: 9 pts
+  - 10th: 7 pts
+  - 11th: 6 pts
+  - 12th: 5 pts
+  - 13th: 4 pts
+  - 14th: 3 pts
+  - 15th: 2 pts
+  - 16th: 1 pt
+
+**D. Team Score Display:**
+- **Live Score Updates:** Automatically update team scores as swimmers are placed
+- **Expandable Breakdown:** Shows how each swimmer contributes to the team score
+- **Data Persistence:** 
+  - Use **localStorage** to maintain state across page refreshes
+  - Display warning about localStorage limitations for large datasets
+  - Provide CSV export option for data backup
+
+**E. Event Navigation:**
+- **Tabbed Navigation:** Simple tabs for switching between events.
+- **Add/Remove Events:** Flexible event management.
+
+**F. Export and Reporting:**
+- **Export Options:** 
+  - Download results as **CSV** or **PDF** (using jsPDF)
+  - Backup functionality for localStorage data
+- **Export Data Includes:**
+  - Event details
+  - Placement results (swimmer names, schools, times)
+  - Team scores and breakdowns
+  - Total team standings
+- **Print-Friendly Version:** Optimized for printing
+
+---
+
+#### 3. **User Interface Components**
+- **Homepage:**
+  - Required Region/Division selection dropdown
+  - Data source options:
+    1. Auto-scrape attempt from utswimcoach.com
+    2. CSV upload
+    3. Manual data entry
+  - Sample data loading option
+  - Reset data button
+  - localStorage limitation warning
+- **Event Tabs:** Quick navigation between events
+- **Drag-and-Drop Grid:** User-friendly placement interface
+- **Scoreboard:** Displays team scores in real-time
+- **Export Buttons:** Download results, backup data, or print
+
+---
+
+#### 4. **Technical Notes**
+- **Responsive UI:** Designed for desktop and mobile
+- **Error Handling:** 
+  - Graceful fallback for failed web scraping
+  - CSV upload validation
+  - Manual entry validation
+  - Time format validation (MM:SS.ms)
+- **Performance Optimization:** Smooth drag-and-drop interactions
+- **Data Persistence:**
+  - Save swimmer assignments, team scores, and relay teams in **localStorage**
+  - Include data backup/export functionality
+  - Clear/reset option
+  - Warning system for storage limitations
+
+---
+
+#### 5. **Deployment**
+- **GitHub Pages:** Prepare for deployment with proper file structure.
+- **Functional Assets:** Ensure all HTML, CSS, and JS files are linked correctly.
+- **Cross-Browser Testing:** Confirm localStorage and UI work across browsers.
+
+---
+
+**End of Instructions**
+
