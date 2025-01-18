@@ -54,6 +54,7 @@ SwimMeetApp.prototype.reset = function() {
     }
 };
 
+// Initialize application
 class SwimMeetApp {
     constructor() {
         // Initialize core components in order
@@ -106,9 +107,10 @@ class SwimMeetApp {
     }
 }
 
-// Create global instances
-window.addEventListener('DOMContentLoaded', () => {
+// Wait for DOM and scripts to load
+document.addEventListener('DOMContentLoaded', () => {
     try {
+        // Create global app instance
         window.app = new SwimMeetApp();
     } catch (error) {
         console.error('Failed to initialize application:', error);

@@ -149,6 +149,35 @@ class UI {
         alert(message);
     }
 
+    // Parse swimmer data from text
+    parseSwimmerData(line) {
+        // Clean up the line
+        line = line.trim();
+        if (!line) return null;
+
+        console.log('Parsing line:', line); // Debug output
+
+        // Format: "Order Time Name School"
+        // Example: "1 1:50.65 Fox, Taylor Crimson Cliffs"
+        const regex = /^\s*(\d+)\s+(\d+:\d+\.\d+)\s+([^,]+,\s*[^\s]+)\s+(.+?)\s*$/;
+        const match = line.match(regex);
+        
+        if (match) {
+            const result = {
+                place: parseInt(match[1]),
+                time: match[2],
+                name: match[3].trim(),
+                team: match[4].trim(),
+                event: this.currentEventFromHeader
+            };
+            console.log('Successfully parsed:', result); // Debug output
+            return result;
+        }
+        
+        console.log('Failed to parse line with regex'); // Debug output
+        return null;
+    }
+
     // Handle PDF upload
     async handlePDFUpload(event) {
         const file = event.target.files[0];
@@ -162,22 +191,76 @@ class UI {
                 for (let i = 1; i <= pdf.numPages; i++) {
                     const page = await pdf.getPage(i);
                     const textContent = await page.getTextContent();
-                    const pageText = textContent.items.map(item => item.str).join(' ');
                     
-                    // Parse the text content for swimmer data
-                    // This is a basic example - you'll need to adjust the parsing logic
-                    // based on your PDF format
-                    const lines = pageText.split('\n');
+                    // Convert text items to lines while preserving structure
+                    let currentY = null;
+                    let currentLine = [];
+                    const lines = [];
+                    
+                    textContent.items.forEach(item => {
+                        if (currentY === null) {
+                            currentY = item.transform[5];
+                        }
+                        
+                        // If Y position changes significantly, it's a new line
+                        if (Math.abs(currentY - item.transform[5]) > 5) {
+                            if (currentLine.length > 0) {
+                                lines.push(currentLine.join(' '));
+                                currentLine = [];
+                            }
+                            currentY = item.transform[5];
+                        }
+                        
+                        currentLine.push(item.str);
+                    });
+                    
+                    // Add the last line if exists
+                    if (currentLine.length > 0) {
+                        lines.push(currentLine.join(' '));
+                    }
+
+                    console.log('Extracted lines:', lines); // Debug output
+                    
+                    // Process lines
+                    let currentEvent = null;
                     for (const line of lines) {
+                        console.log('Processing line:', line); // Debug output
+                        
+                        // Check for event header (e.g., "Region 9 Men 200 Free")
+                        const eventHeaderMatch = line.match(/Region \d+ (?:Men|Women) (.+)/);
+                        if (eventHeaderMatch) {
+                            currentEvent = this.determineEventFromHeader(eventHeaderMatch[1]);
+                            this.currentEventFromHeader = currentEvent;
+                            console.log('Found event header:', eventHeaderMatch[1], 'mapped to:', currentEvent); // Debug output
+                            continue;
+                        }
+
+                        // Skip header row
+                        if (line.includes('Order') && line.includes('Time') && line.includes('Name') && line.includes('School')) {
+                            console.log('Skipping header row:', line); // Debug output
+                            continue;
+                        }
+
                         const swimmerMatch = this.parseSwimmerData(line);
-                        if (swimmerMatch) {
+                        if (swimmerMatch && currentEvent) {
+                            swimmerMatch.eventId = currentEvent;
                             swimmerData.push(swimmerMatch);
+                            console.log('Found swimmer:', swimmerMatch); // Debug output
+                        } else if (line.trim()) {
+                            console.log('Failed to parse line:', line); // Debug output
                         }
                     }
                 }
 
+                if (swimmerData.length === 0) {
+                    console.log('No swimmer data found. Check the parsing logic.'); // Debug output
+                    this.showError('No valid swimmer data found in PDF. Please check the format.');
+                    return;
+                }
+
                 // Add swimmers to events
                 this.processSwimmerData(swimmerData);
+                console.log('Successfully processed swimmer data:', swimmerData);
                 
             } catch (error) {
                 console.error('Error processing PDF:', error);
@@ -186,50 +269,65 @@ class UI {
         }
     }
 
-    // Parse swimmer data from text
-    parseSwimmerData(line) {
-        // This is a placeholder implementation
-        // You'll need to adjust this based on your PDF format
-        const regex = /([A-Za-z\s]+)\s+(\d+:\d+\.\d+|\d+\.\d+)\s+([A-Za-z\s]+)/;
-        const match = line.match(regex);
-        
-        if (match) {
-            return {
-                name: match[1].trim(),
-                time: match[2],
-                team: match[3].trim()
-            };
+    // Determine event from header text
+    determineEventFromHeader(headerText) {
+        // Map common event names to our event IDs
+        const eventMap = {
+            '50 Free': 'free50',
+            '100 Free': 'free100',
+            '200 Free': 'free200',
+            '500 Free': 'free500',
+            '100 Back': 'back100',
+            '100 Breast': 'breast100',
+            '100 Fly': 'fly100',
+            '200 I.M.': 'im200',
+            '200 Freestyle Relay': 'freeRelay200',
+            '400 Freestyle Relay': 'freeRelay400',
+            '200 Medley Relay': 'medleyRelay200'
+        };
+
+        // Clean up the header text
+        const cleanHeader = headerText.trim()
+            .replace('Freestyle', 'Free')
+            .replace('Backstroke', 'Back')
+            .replace('Breaststroke', 'Breast')
+            .replace('Butterfly', 'Fly');
+
+        // Find matching event
+        for (const [key, value] of Object.entries(eventMap)) {
+            if (cleanHeader.includes(key)) {
+                return value;
+            }
         }
+
         return null;
     }
 
     // Process parsed swimmer data
     processSwimmerData(swimmerData) {
+        let addedCount = 0;
+        
         for (const data of swimmerData) {
-            const eventId = this.determineEventFromTime(data.time);
-            if (eventId) {
-                app.swimmerManager.addSwimmer(eventId, {
+            if (data.eventId) {
+                app.swimmerManager.addSwimmer(data.eventId, {
                     name: data.name,
                     team: data.team,
                     time: data.time
                 });
+                
+                // Update placement
+                app.scoringSystem.updatePlacement(data.eventId, data.name, data.place);
+                addedCount++;
             }
         }
         
         // Update the UI
         this.renderEvents();
-        const currentEvent = app.eventManager.getCurrentEvent();
-        if (currentEvent) {
-            this.selectEvent(currentEvent);
+        if (addedCount > 0) {
+            alert(`Successfully added ${addedCount} swimmers from PDF.`);
+        } else {
+            this.showError('No swimmers were added. Please check the PDF format.');
         }
-    }
-
-    // Determine event based on time
-    determineEventFromTime(time) {
-        // This is a placeholder implementation
-        // You'll need to implement logic to determine which event
-        // a time corresponds to based on your requirements
-        return null;
     }
 }
 
