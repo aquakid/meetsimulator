@@ -21,14 +21,6 @@ document.addEventListener('DOMContentLoaded', () => {
             throw new Error(`Missing required scripts: ${missingScripts.join(', ')}`);
         }
 
-        // Initialize core components if not already initialized
-        window.CONFIG = window.CONFIG || {};
-        window.storage = window.storage || new StorageManager();
-        window.eventManager = window.eventManager || new EventManager();
-        window.swimmerManager = window.swimmerManager || new SwimmerManager();
-        window.scoringSystem = window.scoringSystem || new ScoringSystem();
-        window.ui = window.ui || new UI();
-
         // Initialize the main application
         window.app = new SwimMeetApp();
         console.log('Swim Meet Score Tracker initialized successfully');
@@ -64,6 +56,7 @@ SwimMeetApp.prototype.reset = function() {
 
 class SwimMeetApp {
     constructor() {
+        // Initialize core components in order
         this.storage = new StorageManager();
         this.eventManager = new EventManager();
         this.swimmerManager = new SwimmerManager();
